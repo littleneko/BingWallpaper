@@ -148,7 +148,10 @@ def run(sqlite: str):
                 logging.info("[Bing] image exist: date=%s, hsh=%s, url=%s", date, hsh, url)
         conn.close()
         logging.info("[Bing] wait for next round after %s second", conf.scan_sec)
-        time.sleep(conf.scan_sec)
+        try:
+            time.sleep(conf.scan_sec)
+        except KeyboardInterrupt:
+            break
 
 
 def download_img(zone: str, date: str, url: str) -> bool:
