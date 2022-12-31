@@ -6,29 +6,28 @@ import os.path
 import sys
 from logging.handlers import RotatingFileHandler
 
-from config import *
 
-
-def init_logging():
+def init_logging(filelog: bool, path: str):
     logger = logging.getLogger()
     formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d %(message)s')
-    log_file = os.path.join(LOG_DIR, "bing.log")
 
-    file_hdl = RotatingFileHandler(log_file, maxBytes=100 * 1024 * 1024, backupCount=10)
-    file_hdl.setFormatter(formatter)
+    if filelog:
+        if not os.path.exists(path):
+            os.makedirs(path)
+        log_file = os.path.join(path, "bing.log")
+        file_hdl = RotatingFileHandler(log_file, maxBytes=100 * 1024 * 1024, backupCount=10)
+        file_hdl.setFormatter(formatter)
+        logger.addHandler(file_hdl)
+
     stdout_hdl = logging.StreamHandler(sys.stdout)
     stdout_hdl.setFormatter(formatter)
 
-    logger.addHandler(file_hdl)
     logger.addHandler(stdout_hdl)
     logger.setLevel(logging.INFO)
 
 
-init_logging()
-
-logger = logging.getLogger()
-
 if __name__ == '__main__':
-    logger.error("[logger] error")
-    logger.warning("[logger] waring")
-    logger.info("[logger] info")
+    init_logging(".")
+    logging.error("[logger] error")
+    logging.warning("[logger] waring")
+    logging.info("[logger] info")
