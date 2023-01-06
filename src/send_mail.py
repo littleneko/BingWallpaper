@@ -8,7 +8,6 @@
 # without any warranty.
 
 import argparse
-import logging
 import re
 import sys
 import smtplib
@@ -19,6 +18,7 @@ from email.utils import formataddr
 
 
 class SmtpType(Enum):
+    INVALIDED = 0
     N163 = 1
     N126 = 2
     QQ = 5
@@ -47,36 +47,32 @@ SMTP_INFO = {
 }
 
 
-def get_smtp_info(mail_address: str) -> SmtpInfo:
-    smtp_type = SmtpType.N163
+def __get_smtp_info(mail_address: str) -> SmtpInfo:
+    smtp_type = SmtpType.INVALIDED
     for item in SMTP_RE:
         if item[0].match(mail_address):
             smtp_type = item[1]
             break
+    if smtp_type == SmtpType.INVALIDED:
+        raise Exception("not supported email type, only support [162, 126, 11, gmail]")
     return SMTP_INFO[smtp_type]
 
 
-def mail(from_address: str, from_name: str, pwd: str, to_address: str, title: str, content: str) -> bool:
-    success = True
-    try:
-        msg = MIMEText(content, 'plain', 'utf-8')
-        msg['From'] = formataddr((from_name, from_address))
-        msg['To'] = formataddr(("", to_address))
-        msg['Subject'] = title
+def send_mail(from_address: str, from_name: str, pwd: str, to_address: str, title: str, content: str):
+    msg = MIMEText(content, 'plain', 'utf-8')
+    msg['From'] = formataddr((from_name, from_address))
+    msg['To'] = formataddr(("", to_address))
+    msg['Subject'] = title
 
-        smtp_info = get_smtp_info(from_address)
-        if smtp_info.ssl:
-            server = smtplib.SMTP_SSL(smtp_info.server, smtp_info.port)
-        else:
-            server = smtplib.SMTP(smtp_info.server, smtp_info.port)
+    smtp_info = __get_smtp_info(from_address)
+    if smtp_info.ssl:
+        server = smtplib.SMTP_SSL(smtp_info.server, smtp_info.port)
+    else:
+        server = smtplib.SMTP(smtp_info.server, smtp_info.port)
 
-        server.login(from_address, pwd)
-        server.sendmail(from_address, [to_address, ], msg.as_string())
-        server.quit()
-    except Exception as e:
-        logging.error("failed to send mail, %s", e)
-        success = False
-    return success
+    server.login(from_address, pwd)
+    server.sendmail(from_address, [to_address, ], msg.as_string())
+    server.quit()
 
 
 def get_options(args=None):
@@ -86,17 +82,17 @@ def get_options(args=None):
     parser.add_argument("--from-addr", default="example@163.com", help="Your email send from.")
     parser.add_argument("--from-name", default="Robot", help="Your name.")
     parser.add_argument("--to-addr", default="example@163.com", help="Your email send to.")
-    parser.add_argument("-p", "--password", help="Your sent email password.")
-    parser.add_argument("-t", "--title", help="Your email title.")
-    parser.add_argument("-c", "--content", help="Your email content, only support text.")
+    parser.add_argument("-p", "--password", default='password', help="Your sent email password.")
+    parser.add_argument("-t", "--title", default='This is title', help="Your email title.")
+    parser.add_argument("-c", "--content", default='This is content', help="Your email content, only support text.")
     opts = parser.parse_args(args)
     return opts
 
 
 if __name__ == '__main__':
     options = get_options(sys.argv[1:])
-    ret = mail(options.from_addr, options.from_name, options.password, options.to_addr, options.title, options.content)
-    if ret:
-        print("success")
-    else:
-        print("fail")
+    try:
+        send_mail(options.from_addr, options.from_name, options.password, options.to_addr, options.title,
+                  options.content)
+    except Exception as e:
+        print("Failed to send email: ", e)

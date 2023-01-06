@@ -130,6 +130,6 @@ dmypy.json
 
 .DS_Store
 .idea/
-bing/
-database/
+download/
+storage/
 log/

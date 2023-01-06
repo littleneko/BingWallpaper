@@ -27,7 +27,7 @@ def init_logging(filelog: bool, path: str):
 
 
 if __name__ == '__main__':
-    init_logging(".")
+    init_logging(True, ".")
     logging.error("[logger] error")
     logging.warning("[logger] waring")
     logging.info("[logger] info")
