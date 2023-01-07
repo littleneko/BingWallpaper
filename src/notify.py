@@ -32,7 +32,6 @@ class Notification(object):
 
         if self._server_chan_key:
             try:
-                logging.info("FUCK")
                 r = requests.get(Notification.SERVER_CHAN_URI + self._server_chan_key + ".send", params={"text": title},
                                  timeout=5)
                 if r.status_code != 200:
