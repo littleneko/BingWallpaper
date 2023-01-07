@@ -5,10 +5,10 @@ A scripy to download bing daily wallpaper
 ## Usage
 
 ```
-usage: app.py [-h] [--server-mode] [--scan-interval SCAN_INTERVAL] [--log-type {stdout,file}] [--log-path LOG_PATH] [--log-level {DEBUG,INFO,WARNING,ERROR}]
+usage: app.py [-h] [--service-mode] [--scan-interval SCAN_INTERVAL] [--log-type {stdout,file}] [--log-path LOG_PATH] [--log-level {DEBUG,INFO,WARNING,ERROR}]
               [--storage-type {NONE,SQLITE}] [--storage-path STORAGE_PATH] [--download-path DOWNLOAD_PATH] [--download-timeout DOWNLOAD_TIMEOUT] [--retries RETRIES]
-              [--zone {CN,EN}] [--count {1,2,3,4,5,6,7,8}] [--notify-mail NOTIFY_MAIL] [--notify-user-mail NOTIFY_USER_MAIL] [--notify-user-pass NOTIFY_USER_PASS]
-              [--notify-user-name NOTIFY_USER_NAME] [--server-chan-key SERVER_CHAN_KEY]
+              [--search-zone {CN,EN}] [--day-offset {0,1,2,3,4,5,6,7}] [--day-count {1,2,3,4,5,6,7,8}] [--notify-mail NOTIFY_MAIL] [--notify-user-mail NOTIFY_USER_MAIL]
+              [--notify-user-pass NOTIFY_USER_PASS] [--notify-user-name NOTIFY_USER_NAME] [--server-chan-key SERVER_CHAN_KEY]
 
 A tool to download bing daily wallpaper.
 
@@ -16,28 +16,31 @@ options:
   -h, --help            show this help message and exit
 
 General Options:
-  --server-mode         run as server and scan new wallpaper cyclically, otherwise only run once (default: False)
+  --service-mode        Run as service and periodically scan new wallpaper, otherwise only run once (default: False)
   --scan-interval SCAN_INTERVAL
-                        seconds to check new wallpaper if run in server mode, env: BING_SCAN_INTERVAL (default: 3600)
+                        Check new wallpaper every scan-interval millisecond if run in server mode, env: BING_SCAN_INTERVAL (default: 3600)
   --log-type {stdout,file}
-                        write log to file or stdout, env: BING_LOG_TYPE (default: stdout)
-  --log-path LOG_PATH   location for log file if filelog is true, env: BING_LOG_PATH (default: log)
+                        Write log to file or stdout, env: BING_LOG_TYPE (default: stdout)
+  --log-path LOG_PATH   Location for log file if log-type is file, env: BING_LOG_PATH (default: log)
   --log-level {DEBUG,INFO,WARNING,ERROR}
-                        location for log file if filelog is true, env: BING_LOG_LEVEL (default: INFO)
+                        Log level, env: BING_LOG_LEVEL (default: INFO)
   --storage-type {NONE,SQLITE}
-                        how to store wall paper info and check wallpaper exist, NONE for no check, env: BING_STORAGE_TYPE (default: SQLITE)
+                        The way to store wallpaper info and check exist, NONE means not store and not check, env: BING_STORAGE_TYPE (default: SQLITE)
   --storage-path STORAGE_PATH
-                        location for sqlite database files, env: BING_STORAGE_PATH (default: storage)
+                        Location for database files if storage-type is not NONE, env: BING_STORAGE_PATH (default: storage)
   --download-path DOWNLOAD_PATH
-                        location for downloaded image files, env: BING_DOWNLOAD_PATH (default: download)
+                        Location for downloaded wallpaper files, env: BING_DOWNLOAD_PATH (default: download)
   --download-timeout DOWNLOAD_TIMEOUT
-                        download timeout millisecond, env: BING_DOWNLOAD_TIMEOUT (default: 5000)
-  --retries RETRIES     times to retry when failed to download, env: BING_RETRIES (default: 3)
+                        Download timeout millisecond, env: BING_DOWNLOAD_TIMEOUT (default: 5000)
+  --retries RETRIES     Times to retry when failed to download, env: BING_RETRIES (default: 3)
 
 Bing Options:
-  --zone {CN,EN}        where to download wallpaper, env: BING_ZONE (default: CN)
-  --count {1,2,3,4,5,6,7,8}
-                        how many wallpaper to download, env: BING_COUNT (default: 8)
+  --search-zone {CN,EN}
+                        Search in bing china or international web site, env: BING_SEARCH_ZONE (default: CN)
+  --day-offset {0,1,2,3,4,5,6,7}
+                        The num days before today start to get, env: BING_DAY_OFFSET (default: 0)
+  --day-count {1,2,3,4,5,6,7,8}
+                        The bing API can get up to 8 days of wallpaper before today, env: BING_DAY_COUNT (default: 8)
 
 Notify Options:
   --notify-mail NOTIFY_MAIL
@@ -57,13 +60,14 @@ All args can be read from environment variables, the environment variables with 
 
 ## Docker Usage
 
+Run as service and periodically scan new wallpaper:
+
 ```shell
 docker run -d \
   -e BING_SCAN_INTERVAL=3600 \
   -e BING_NOTIFY_MAIL=example@qq.com \
   -e BING_NOTIFY_USER_MAIL=example@163.com \
   -e BING_NOTIFY_USER_PASS=password \
-  -e BING_SERVER_CHAN_KEY=xxx \
   -v /path/to/storage/folder:/bing/storage \
   -v /path/to/download/folder:/bing/download \
   littleneko/bing-dl:latest

@@ -61,6 +61,9 @@ class BingWallpaperInfo:
     def tojson(self) -> str:
         return json.dumps(self.asdict(), ensure_ascii=False)
 
+    def digest_str(self) -> str:
+        return "[date: {}, hsh: {}, title: {}, url: {}]".format(self.startdate, self.hsh, self.title, self.url)
+
 
 class BingWallpaperClient(object):
     BING_BASE_URL = "https://www.bing.com"

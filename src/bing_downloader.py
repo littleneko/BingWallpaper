@@ -121,6 +121,7 @@ class BingWallpaperDownloader(object):
 
     def __init__(self,
                  en_search: bool = True,
+                 download_offset: int = 0,
                  download_cnt: int = 8,
                  download_path: str = "bing",
                  max_retries: int = 3,
@@ -130,6 +131,7 @@ class BingWallpaperDownloader(object):
                  wallpaper_mgr: BingWallpaperManager = None,
                  notify: Notification = None):
         self._en_search = en_search
+        self._download_offset = download_offset
         self._download_cnt = download_cnt
         self._download_path = download_path
         self._max_retries = max_retries
@@ -156,7 +158,6 @@ class BingWallpaperDownloader(object):
 
     def download_one_img(self, wallpaper: BingWallpaperInfo):
         filename = self.get_filename(wallpaper.startdate, wallpaper.url)
-        logging.info("[BingDownloader] start download file: %s", filename)
         s = requests.Session()
         retries = Retry(total=self._max_retries, backoff_factor=self._backoff)
         s.mount('https://', HTTPAdapter(max_retries=retries))
@@ -165,28 +166,27 @@ class BingWallpaperDownloader(object):
             raise Exception("status_code: %d, resp: %s".format(r.status_code, r.text))
 
         write_file(file_name=filename, data=r.content)
+        logging.info("[BingDownloader] success download wallpaper, %s, filename: %s", wallpaper.digest_str(), filename)
 
     def download(self):
         try:
-            wallpapers = self._wallpaper_client.get_wallpaper_info(en_search=self._en_search, num=self._download_cnt)
-            for wallpaper in wallpapers:
-                if self._wallpaper_mgr.wallpaper_exist(wallpaper.hsh):
-                    logging.info("[BingDownloader] wallpaper exist: date=%s, hsh=%s, url=%s", wallpaper.startdate,
-                                 wallpaper.hsh, wallpaper.url)
+            wallpapers = self._wallpaper_client.get_wallpaper_info(idx=self._download_offset,
+                                                                   num=self._download_cnt,
+                                                                   en_search=self._en_search)
+            for w in wallpapers:
+                if self._wallpaper_mgr.wallpaper_exist(w.hsh):
+                    logging.info("[BingDownloader] wallpaper exist: %s", w.digest_str())
                     continue
 
                 try:
-                    self.download_one_img(wallpaper)
-                    self._wallpaper_mgr.save_wallpaper_info(wallpaper)
-                    logging.info("[BingDownloader] success save wallpaper info to db, date: %s, hash: %s, url: %s",
-                                 wallpaper.startdate, wallpaper.hsh, wallpaper.url)
+                    self.download_one_img(w)
+                    self._wallpaper_mgr.save_wallpaper_info(w)
+                    logging.info("[BingDownloader] success save wallpaper info to database, %s", w.digest_str())
                     if self._notify:
-                        self._notify.notify("Bing Wallpaper Download SUCCESS", wallpaper.tojson())
+                        self._notify.notify("Bing Wallpaper Download SUCCESS", w.tojson())
                 except Exception as e:
-                    logging.error("[BingDownloader] failed to download, date: %s, hsh: %s, url: %s, %s",
-                                  wallpaper.startdate, wallpaper.hsh, wallpaper.url, e)
+                    logging.error("[BingDownloader] failed to download wallpaper, %s, msg: %s", w.digest_str(), e)
                     if self._notify:
-                        self._notify.notify("Bing Wallpaper Download ERROR",
-                                            "msg: {}\ninfo: {}".format(e, wallpaper.tojson()))
+                        self._notify.notify("Bing Wallpaper Download ERROR", "msg: {}\ninfo: {}".format(e, w.tojson()))
         except Exception as e:
-            logging.error("[BingDownloader] failed to download, %s", e)
+            logging.error("[BingDownloader] failed to download, msg: %s", e)

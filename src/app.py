@@ -18,37 +18,39 @@ def get_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     gen_group = parser.add_argument_group('General Options')
-    gen_group.add_argument('--server-mode', action='store_true',
-                           help='run as server and scan new wallpaper cyclically, otherwise only run once')
+    gen_group.add_argument('--service-mode', action='store_true',
+                           help='Run as service and periodically scan new wallpaper, otherwise only run once')
     gen_group.add_argument('--scan-interval', default=3600, type=int, action=env_default('BING_SCAN_INTERVAL'),
-                           help='seconds to check new wallpaper if run in server mode, env: BING_SCAN_INTERVAL')
-
+                           help='Check new wallpaper every scan-interval millisecond if run in server mode, '
+                                'env: BING_SCAN_INTERVAL')
     gen_group.add_argument('--log-type', default='stdout', choices=['stdout', 'file'],
-                           action=env_default('BING_LOG_TYPE'),
-                           help='write log to file or stdout, env: BING_LOG_TYPE')
+                           action=env_default('BING_LOG_TYPE'), help='Write log to file or stdout, env: BING_LOG_TYPE')
     gen_group.add_argument('--log-path', default="log", action=env_default('BING_LOG_PATH'),
-                           help='location for log file if filelog is true, env: BING_LOG_PATH')
+                           help='Location for log file if log-type is file, env: BING_LOG_PATH')
     gen_group.add_argument('--log-level', default="INFO", choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
-                           action=env_default('BING_LOG_LEVEL'),
-                           help='location for log file if filelog is true, env: BING_LOG_LEVEL')
+                           action=env_default('BING_LOG_LEVEL'), help='Log level, env: BING_LOG_LEVEL')
     gen_group.add_argument('--storage-type', default='SQLITE', choices=list(StorageType),
                            type=StorageType, action=env_default('BING_STORAGE_TYPE'),
-                           help='how to store wall paper info and check wallpaper exist, NONE for no check, '
+                           help='The way to store wallpaper info and check exist, NONE means not store and not check, '
                                 'env: BING_STORAGE_TYPE')
     gen_group.add_argument('--storage-path', default='storage', action=env_default('BING_STORAGE_PATH'),
-                           help='location for sqlite database files, env: BING_STORAGE_PATH')
+                           help='Location for database files if storage-type is not NONE, env: BING_STORAGE_PATH')
     gen_group.add_argument('--download-path', default="download", action=env_default('BING_DOWNLOAD_PATH'),
-                           help='location for downloaded image files, env: BING_DOWNLOAD_PATH')
+                           help='Location for downloaded wallpaper files, env: BING_DOWNLOAD_PATH')
     gen_group.add_argument('--download-timeout', default=5000, type=int, action=env_default('BING_DOWNLOAD_TIMEOUT'),
-                           help='download timeout millisecond, env: BING_DOWNLOAD_TIMEOUT')
+                           help='Download timeout millisecond, env: BING_DOWNLOAD_TIMEOUT')
     gen_group.add_argument('--retries', default=3, type=int, action=env_default('BING_RETRIES'),
-                           help='times to retry when failed to download, env: BING_RETRIES')
+                           help='Times to retry when failed to download, env: BING_RETRIES')
 
     bing_group = parser.add_argument_group('Bing Options')
-    bing_group.add_argument('--zone', default='CN', choices=['CN', 'EN'], action=env_default('BING_ZONE'),
-                            help='where to download wallpaper, env: BING_ZONE')
-    bing_group.add_argument('--count', default=8, type=int, choices=range(1, 9), action=env_default('BING_COUNT'),
-                            help='how many wallpaper to download, env: BING_COUNT')
+    bing_group.add_argument('--search-zone', default='CN', choices=['CN', 'EN'], action=env_default('BING_SEARCH_ZONE'),
+                            help='Search in bing china or international web site, env: BING_SEARCH_ZONE')
+    bing_group.add_argument('--day-offset', default=0, type=int, choices=range(0, 8),
+                            action=env_default('BING_DAY_OFFSET'),
+                            help='The num days before today start to get, env: BING_DAY_OFFSET')
+    bing_group.add_argument('--day-count', default=8, type=int, choices=range(1, 9),
+                            action=env_default('BING_DAY_COUNT'),
+                            help='The bing API can get up to 8 days of wallpaper before today, env: BING_DAY_COUNT')
 
     notify_group = parser.add_argument_group('Notify Options')
     notify_group.add_argument('--notify-mail', action=env_default('BING_NOTIFY_MAIL'),
@@ -89,9 +91,10 @@ def run():
     else:
         wallpaper_mgr = NoBingWallpaperManager()
 
-    en_search = False if args.zone == 'CN' else True
+    en_search = False if args.search_zone == 'CN' else True
     bing_downloader = BingWallpaperDownloader(en_search=en_search,
-                                              download_cnt=args.count,
+                                              download_offset=args.day_offset,
+                                              download_cnt=args.day_count,
                                               download_path=args.download_path,
                                               max_retries=args.retries,
                                               download_timeout_ms=args.download_timeout,
@@ -100,7 +103,8 @@ def run():
 
     while True:
         bing_downloader.download()
-        if not args.server_mode: break
+        if not args.service_mode: break
+
         logging.info("wait for next round after %d second", args.scan_interval)
         try:
             time.sleep(args.scan_interval)
