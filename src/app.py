@@ -14,6 +14,7 @@ from env import env_default
 
 def get_args():
     parser = argparse.ArgumentParser(
+        prog='bing-dl',
         description='A tool to download bing daily wallpaper.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -23,10 +24,8 @@ def get_args():
     gen_group.add_argument('--scan-interval', default=3600, type=int, action=env_default('BING_SCAN_INTERVAL'),
                            help='Check new wallpaper every scan-interval millisecond if run in server mode, '
                                 'env: BING_SCAN_INTERVAL')
-    gen_group.add_argument('--log-type', default='stdout', choices=['stdout', 'file'],
-                           action=env_default('BING_LOG_TYPE'), help='Write log to file or stdout, env: BING_LOG_TYPE')
-    gen_group.add_argument('--log-path', default="log", action=env_default('BING_LOG_PATH'),
-                           help='Location for log file if log-type is file, env: BING_LOG_PATH')
+    gen_group.add_argument('--log-path', action=env_default('BING_LOG_PATH'),
+                           help='Location for log file, default is stdout, env: BING_LOG_PATH')
     gen_group.add_argument('--log-level', default="INFO", choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
                            action=env_default('BING_LOG_LEVEL'), help='Log level, env: BING_LOG_LEVEL')
     gen_group.add_argument('--storage-type', default='SQLITE', choices=list(StorageType),
@@ -39,8 +38,10 @@ def get_args():
                            help='Location for downloaded wallpaper files, env: BING_DOWNLOAD_PATH')
     gen_group.add_argument('--download-timeout', default=5000, type=int, action=env_default('BING_DOWNLOAD_TIMEOUT'),
                            help='Download timeout millisecond, env: BING_DOWNLOAD_TIMEOUT')
-    gen_group.add_argument('--retries', default=3, type=int, action=env_default('BING_RETRIES'),
-                           help='Times to retry when failed to download, env: BING_RETRIES')
+    gen_group.add_argument('--max-retries', default=3, type=int, action=env_default('BING_MAX_RETRIES'),
+                           help='Times to retry when failed to download, env: BING_MAX_RETRIES')
+    gen_group.add_argument('--retry-backoff', default=1000, type=int, action=env_default('BING_RETRY_BACKOFF'),
+                           help='Backoff time millisecond to retry if failed, env: BING_RETRY_BACKOFF')
 
     bing_group = parser.add_argument_group('Bing Options')
     bing_group.add_argument('--search-zone', default='CN', choices=['CN', 'EN'], action=env_default('BING_SEARCH_ZONE'),
@@ -71,7 +72,7 @@ def get_args():
 def run():
     args = get_args()
 
-    init_logging(args.log_type, args.log_path, args.log_level)
+    init_logging(args.log_path, args.log_level)
 
     notify = None
     if args.notify_mail:
@@ -96,7 +97,8 @@ def run():
                                               download_offset=args.day_offset,
                                               download_cnt=args.day_count,
                                               download_path=args.download_path,
-                                              max_retries=args.retries,
+                                              max_retries=args.max_retries,
+                                              retry_backoff_ms=args.retry_backoff,
                                               download_timeout_ms=args.download_timeout,
                                               notify=notify,
                                               wallpaper_mgr=wallpaper_mgr)

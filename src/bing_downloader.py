@@ -125,7 +125,7 @@ class BingWallpaperDownloader(object):
                  download_cnt: int = 8,
                  download_path: str = "bing",
                  max_retries: int = 3,
-                 backoff_ms: int = 1000,
+                 retry_backoff_ms: int = 1000,
                  timeout_ms: int = 5000,
                  download_timeout_ms: int = 10000,
                  wallpaper_mgr: BingWallpaperManager = None,
@@ -135,12 +135,12 @@ class BingWallpaperDownloader(object):
         self._download_cnt = download_cnt
         self._download_path = download_path
         self._max_retries = max_retries
-        self._backoff = backoff_ms / 1000
+        self._backoff = retry_backoff_ms / 1000
         self._timeout = timeout_ms / 1000
         self._download_timeout = download_timeout_ms / 1000
         self._wallpaper_mgr = wallpaper_mgr
         self._notify = notify
-        self._wallpaper_client = BingWallpaperClient(timeout_ms, max_retries, backoff_ms)
+        self._wallpaper_client = BingWallpaperClient(timeout_ms, max_retries, retry_backoff_ms)
 
         if not os.path.exists(self._download_path):
             os.makedirs(self._download_path)
