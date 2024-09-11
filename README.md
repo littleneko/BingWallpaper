@@ -61,7 +61,10 @@ All args can be read from environment variables, the environment variables with 
 
 ## Docker Usage
 
-Run as service and periodically scan new wallpaper:
+Run as service and periodically scan new wallpaper.
+
+
+Note that bing-dl runs as UID 1000 and GID 1000 by default. These may be altered with the `PUID` and `PGID` environment variables.
 
 ```shell
 docker run -d \
@@ -69,6 +72,8 @@ docker run -d \
   -e BING_NOTIFY_MAIL=example@qq.com \
   -e BING_NOTIFY_USER_MAIL=example@163.com \
   -e BING_NOTIFY_USER_PASS=password \
+  -e PUID=1000 \
+  -e PGID=1000 \
   -v /path/to/storage/folder:/bing/storage \
   -v /path/to/download/folder:/bing/download \
   littleneko/bing-dl:latest
